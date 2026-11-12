@@ -1,70 +1,41 @@
-# Copyright (c) HashiCorp, Inc.
-# SPDX-License-Identifier: MIT
-
-provider "aws" {
-  region = var.region
-
-  default_tags {
-    tags = {
-      hashicorp-learn = "circleci"
-    }
-  }
+provider "azurerm" {
+  features {}
 }
 
-resource "random_uuid" "randomid" {}
-
-resource "aws_s3_bucket" "app" {
-  tags = {
-    Name          = "App Bucket"
-    public_bucket = true
-  }
-
-  bucket        = "${var.app}.${var.label}.${random_uuid.randomid.result}"
-  force_destroy = true
+resource "random_string" "suffix" {
+  length  = 6
+  special = false
+  upper   = false
 }
 
-resource "aws_s3_bucket_ownership_controls" "app" {
-  bucket = aws_s3_bucket.app.id
-  rule {
-    object_ownership = "BucketOwnerPreferred"
-  }
+resource "azurerm_resource_group" "app" {
+  name     = "rg-${var.app}-${random_string.suffix.result}"
+  location = var.location
+  tags     = { hashicorp-learn = "circleci", label = var.label }
 }
 
-resource "aws_s3_bucket_public_access_block" "app" {
-  bucket = aws_s3_bucket.app.id
-
-  block_public_acls       = false
-  block_public_policy     = false
-  ignore_public_acls      = false
-  restrict_public_buckets = false
+resource "azurerm_storage_account" "app" {
+  name                     = "st${lower(replace(var.app, "/[^a-zA-Z0-9]/", ""))}${random_string.suffix.result}"
+  resource_group_name      = azurerm_resource_group.app.name
+  location                 = azurerm_resource_group.app.location
+  account_tier             = "Standard"
+  account_replication_type = "LRS"
+  tags                     = { hashicorp-learn = "circleci", label = var.label }
 }
 
-resource "aws_s3_bucket_acl" "app" {
-  depends_on = [
-    aws_s3_bucket_ownership_controls.app,
-    aws_s3_bucket_public_access_block.app,
-  ]
-
-  bucket = aws_s3_bucket.app.id
-  acl    = "public-read"
+resource "azurerm_storage_account_static_website" "app" {
+  storage_account_id = azurerm_storage_account.app.id
+  index_document     = "index.html"
+  error_404_document = "error.html"
 }
 
-resource "aws_s3_bucket_website_configuration" "app" {
-  bucket = aws_s3_bucket.app.bucket
+resource "azurerm_storage_blob" "app" {
+  name                   = "index.html"
+  storage_account_name   = azurerm_storage_account.app.name
+  storage_container_name = "$web"
+  type                   = "Block"
+  content_type           = "text/html"
+  source                 = "./assets/index.html"
 
-  index_document {
-    suffix = "index.html"
-  }
-
-  error_document {
-    key = "error.html"
-  }
-}
-
-resource "aws_s3_object" "app" {
-  acl          = "public-read"
-  key          = "index.html"
-  bucket       = aws_s3_bucket.app.id
-  content      = file("./assets/index.html")
-  content_type = "text/html"
+  depends_on = [azurerm_storage_account_static_website.app]
 }

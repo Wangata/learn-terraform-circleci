@@ -1,13 +1,16 @@
-# Copyright (c) HashiCorp, Inc.
-# SPDX-License-Identifier: MIT
-
 terraform {
+  required_version = ">= 1.2"
+
+  cloud {}
+
   required_providers {
-    aws = {
-      source  = "hashicorp/aws"
-      version = "~> 5.21.0"
+    azurerm = {
+      source  = "hashicorp/azurerm"
+      version = "~> 4.20"
+    }
+    random = {
+      source  = "hashicorp/random"
+      version = "~> 3.6"
     }
   }
-
-  required_version = "~> 1.2"
 }

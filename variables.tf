@@ -1,9 +1,6 @@
-# Copyright (c) HashiCorp, Inc.
-# SPDX-License-Identifier: MIT
-
-variable "region" {
+variable "location" {
   type        = string
-  description = "AWS region for all resources."
+  description = "Azure region for all resources."
 }
 
 variable "label" {
