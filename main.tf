@@ -2,6 +2,10 @@ provider "azurerm" {
   features {}
 }
 
+locals {
+  tags = { hashicorp-learn = "circleci", label = var.label }
+}
+
 resource "random_string" "suffix" {
   length  = 6
   special = false
@@ -11,7 +15,7 @@ resource "random_string" "suffix" {
 resource "azurerm_resource_group" "app" {
   name     = "rg-${var.app}-${random_string.suffix.result}"
   location = var.location
-  tags     = { hashicorp-learn = "circleci", label = var.label }
+  tags     = local.tags
 }
 
 resource "azurerm_storage_account" "app" {
@@ -20,7 +24,7 @@ resource "azurerm_storage_account" "app" {
   location                 = azurerm_resource_group.app.location
   account_tier             = "Standard"
   account_replication_type = "LRS"
-  tags                     = { hashicorp-learn = "circleci", label = var.label }
+  tags                     = local.tags
 }
 
 resource "azurerm_storage_account_static_website" "app" {
